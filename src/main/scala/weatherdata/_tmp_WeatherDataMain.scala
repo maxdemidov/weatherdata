@@ -5,6 +5,8 @@ import net.liftweb.json._
 
 object _tmp_WeatherDataMain extends App {
 
+  // TODO - add ScalaTest and ScalaMock
+
   implicit val formats = DefaultFormats
 
   val response: HttpResponse[String] =
