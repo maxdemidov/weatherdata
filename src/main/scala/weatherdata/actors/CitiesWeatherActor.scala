@@ -1,8 +1,8 @@
 package weatherdata.actors
 
-import akka.actor.Props
+import akka.actor.{PoisonPill, Props}
 import akka.pattern.ask
-import weatherdata.model.{CityKey, CityWeather}
+import weatherdata.model.{CityKey, CityLocation, CityWeather, CityWeatherData}
 
 object CitiesWeatherActor {
   sealed trait CitiesWeatherRequest
@@ -24,21 +24,31 @@ class CitiesWeatherActor extends ImplicitActor {
       val citiesWeather =
         citiesKeys.map(cityKey => {
 
-          val data = s"id = ${cityKey.id}, name = ${cityKey.name}, weather"
-
           val cityWeatherActorRef =
             actorSystem.actorOf(Props[CityWeatherActor])
 
           (cityWeatherActorRef ? GetCityWeatherByKey(cityKey))
             .mapTo[CityWeatherResponse]
             .map {
-              case CityWeatherResult(cityWeather) =>
-                logger.info(
-                  s"city id = ${cityWeather.cityKey.id} and data = ${cityWeather.data}")
+              case CityWeatherResult(cityWeatherEither) =>
+                cityWeatherEither match {
+                  case Right(cityWeather) =>
+                    logger.info(
+                      s"city id = ${cityWeather.cityKey.id} and data = ${cityWeather.data}")
+                  case Left(message) =>
+                    logger.info(message)
+                }
             }
 
-          CityWeather(cityKey, data)
+          val data =
+            s"id = ${cityKey.id}, name = ${cityKey.name}, weather"
+
+          CityWeather(cityKey,
+                      "UA",
+                      CityLocation(71, 26),
+                      CityWeatherData(data, "icon", "base", 1, 2, 3, 4))
         })
       sender ! CitiesWeatherResult(citiesWeather)
+      self ! PoisonPill
   }
 }
