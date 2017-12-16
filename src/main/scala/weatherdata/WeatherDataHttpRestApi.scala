@@ -25,8 +25,15 @@ trait WeatherDataHttpRestApi
         post {
           entity(as[CityKeyList]) { cityKeyList =>
             onComplete(getCitiesWeather(cityKeyList)) {
-              case Success(cityWeatherList) =>
-                complete(cityWeatherList)
+              case Success(cityWeatherListEither) =>
+                cityWeatherListEither match {
+                  case Right(cityWeatherList) => complete(cityWeatherList)
+                  case Left(message) =>
+                    complete(
+                      HttpResponse(StatusCodes.InternalServerError,
+                                   entity = s"Error message: $message")
+                    )
+                }
               case Failure(exception) =>
                 complete(
                   HttpResponse(StatusCodes.InternalServerError,

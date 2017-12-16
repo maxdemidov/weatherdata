@@ -15,7 +15,8 @@ trait WeatherDataService {
   implicit def system: ActorSystem
   implicit def timeout: Timeout
 
-  def getCitiesWeather(cityKeyList: CityKeyList): Future[CityWeatherList] = {
+  def getCitiesWeather(
+      cityKeyList: CityKeyList): Future[Either[String, CityWeatherList]] = {
 
     val citiesWeatherActorRef =
       system.actorOf(Props[CitiesWeatherActor])
@@ -24,7 +25,9 @@ trait WeatherDataService {
       .mapTo[CitiesWeatherResponse]
       .map {
         case CitiesWeatherResult(citiesWeather) =>
-          CityWeatherList(citiesWeather)
+          Right(CityWeatherList(citiesWeather))
+        case CitiesWeatherError(message) =>
+          Left(message)
         case _ =>
           throw new IllegalStateException(
             "Unhandled response for WeatherDataService.getCitiesWeather")

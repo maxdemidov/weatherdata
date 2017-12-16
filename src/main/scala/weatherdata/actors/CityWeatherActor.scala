@@ -38,11 +38,9 @@ class CityWeatherActor extends ImplicitActor {
 
       val response: HttpResponse[String] =
         Http(s"$URL?id=$cityId&appid=$APP_ID").asString
-
       val json = parse(response.body)
 
-      (json \ "name").extract[String] match {
-
+      val result = (json \ "name").extract[String] match {
         case thisName if thisName == cityName =>
           val cityWeather = CityWeather(
             cityKey,
@@ -62,12 +60,13 @@ class CityWeatherActor extends ImplicitActor {
             ),
             countryCode = (json \ "sys" \ "country").extract[String]
           )
-          sender ! CityWeatherResult(Right(cityWeather))
-
+          Right(cityWeather)
         case otherName =>
-          sender ! CityWeatherResult(
-            Left(s"City name in cityKey is [$cityName] but found [$otherName]"))
+          val message =
+            s"City name in cityKey is [$cityName] but found [$otherName]"
+          Left(message)
       }
+      sender ! CityWeatherResult(result)
       self ! PoisonPill
   }
 }
